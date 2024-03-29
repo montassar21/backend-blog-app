@@ -4,7 +4,7 @@ const postController = require('../controllers/posts')
 const isAutheticated = require('../middlewares/isAuth')
 
 router.route('/')
-    .get(postController.getAllPosts)
+    .get(postController.getAllPublicPosts)
     
 router.route('/:userId?')  
     .get(postController.getPostByUser)
@@ -14,8 +14,6 @@ router.route('/compose')
 
 
 router.route('/post-details/:postid')
-    .get(postController.getSinglePost)
-    .put(isAutheticated, postController.updatePost)
     .delete(isAutheticated, postController.deleteSinglePost)
 
 

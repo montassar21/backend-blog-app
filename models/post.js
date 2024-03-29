@@ -11,6 +11,13 @@ const postSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+     date: {
+        type: String,
+        required: true
+    },
+      status: {
+        type: String,
+    },
     author: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',

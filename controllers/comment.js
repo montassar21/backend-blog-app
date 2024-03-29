@@ -12,16 +12,6 @@ const getAllComments = async (req, res, next) => {
             throw error
         }
 
-        // const foundPost = await Post.findOne({
-        //     _id: postid
-        // }).populate({ 
-        //     path: 'comments',
-        //     populate: {
-        //       path: 'comments',
-        //       model: 'Comment'
-        //     } 
-        // })
-
         const foundPost = await Post.findOne({
             _id: postid
         }).populate({
@@ -63,15 +53,7 @@ const postComment = async (req, res, next) => {
             err.status = 404
             throw err
         }
-        // const foundUser = await User.findOne({
-        //     _id: req.userData.userId
-        // })
 
-        // if (!foundUser) {
-        //     const err = new Error(`No user found!`)
-        //     err.status = 404
-        //     throw err
-        // }
         const comment = new Comment({
             commentBody: req.body.commentBody,
             commentBy: req.userData.userId,

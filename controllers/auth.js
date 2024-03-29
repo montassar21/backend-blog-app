@@ -16,16 +16,24 @@ const signup = async (req, res, next) => {
         })
         if (foundUser) {
             const error = new Error('Email already exists!')
-            error.status = 409
+             error.json({
+            message: 'Email already exists!',
+        })
             throw error
             //res.status(409).json('Email already exists!')
         } else if (!password || !name || !email || !repassword) {
             const error = new Error(`You must fill the required field!`)
-            error.status = 400
+            error.json({
+            message: 'You must fill the required field!',
+        })
             throw error
+
         } else if (password !== repassword) {
             const error = new Error(`Password dosen't match!`)
-            error.status = 422
+            res.status = 422
+              error.json({
+            message: "Password doesn\'t match!",
+        })
             throw error
         } 
 
@@ -35,6 +43,7 @@ const signup = async (req, res, next) => {
             email: email,
             role: role
         })
+        console.log(newUser);
         const savedUser = await newUser.save()
         res.status(201).json({
             message: 'User created succesfully!',
@@ -59,16 +68,25 @@ const login = async (req, res, next) => {
         if (!email || !password) {
             const error = new Error(`Email or Password field can't be empty!`)
             error.status = 400
+                 error.json({
+                    message:'Email or Password field can\'t be empty!'
+                })
             throw error
         } else if (!foundUser) {
             const error = new Error(`Email address is not signed up!`)
             error.status = 401
+                error.json({
+                    message:'Email address is not signed up!'
+                })
             throw error
         } else {
             const isEqual = await bcrypt.compare(password, foundUser.password)
             if (!isEqual) {
                 const error = new Error(`Wrong password!`)
                 error.status = 401
+                error.json({
+                    message:'Wrong password!'
+                })
                 throw error
             }
             const token = await jwt.sign({
@@ -80,12 +98,10 @@ const login = async (req, res, next) => {
                 expiresIn: '2h'
             })
             const { _id,name,email,role } = foundUser;
-            res.json({
+            res.status(201).json({
                 token: token,
-                // userName: foundUser.name,
-                // userId: foundUser._id.toString(),
-                // role: foundUser.role
-                user:{_id,name,email,role}
+                user: { _id, name, email, role },
+             
             })
         }
     } catch (error) {

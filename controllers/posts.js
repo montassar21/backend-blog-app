@@ -2,22 +2,24 @@ const Post = require('../models/post')
 const mongoose = require('mongoose')
 const User = require('../models/user')
 
-
-const getAllPosts = async (req, res, next) => {
+const getAllPublicPosts = async (req, res, next) => {
     try {
-        const allPosts = await Post.find({}).populate('author', '_id name');
-        if (allPosts.length !== 0) {
+        const allPosts = await Post.find().populate('author', '_id name').exec();
+        const allPublicPosts = allPosts.filter(post => post.status === 'public');
+
+        if (allPublicPosts.length !== 0) {
             res.json({
-                allPosts
-            })
+                allPosts: allPublicPosts
+            });
         } else {
-            res.status(204).json(`No post found!`)
+            res.status(204).json(`No public posts found!`);
         }
-        console.log(allPosts)
+        console.log(allPublicPosts);
     } catch (error) {
-        next(err)
+        next(error);
     }
-}
+};
+
 
 
 const getPostByUser = async (req, res, next) => {
@@ -30,18 +32,21 @@ const getPostByUser = async (req, res, next) => {
             err.status = 422
             throw err
         }
+        console.log(req.params.userId)
         const userWithPost = await User.findById({_id: req.params.userId}, '_id name email').populate('posts')
         if (!userWithPost) {
             const err = new Error(`User not found!`)
             err.status = 404
+
             throw err
         }
         //console.log(req.params.userId)
-        //console.log(userWithPost)
+        console.log(userWithPost)
         res.json({
             userWithPost
         })
     } catch (error) {
+
         next(error)
     }
 }
@@ -84,16 +89,19 @@ const getSinglePost = async (req, res, next) => {
 const savePost = async (req, res, next) => {
     try {
         const title = req.body.title,
-            content = req.body.content
-
-        //req.userData.password = undefined
+            content = req.body.content,
+            date = req.body.date,
+            status = req.body.status
         //console.log(req.userData)
         const newPost = new Post({
             title: title,
             content: content,
-            // author: req.userData.userId
+            date: date,
+            status: status,
             author: req.userId
         })
+        console.log(newPost);
+
 
 
         //console.log(req.user)
@@ -163,43 +171,45 @@ const updatePost = async (req, res, next) => {
 
 const deleteSinglePost = async (req, res, next) => {
     try {
-        const postId = req.params.postid
+        const postId = req.params.postid; // Utilisation de req.params.postid pour accéder à l'ID du post
         if (!mongoose.Types.ObjectId.isValid(postId)) {
-            const err = new Error(`Provided id is not valid`)
-            err.status = 422
-            throw err
+            const err = new Error(`Provided id is not valid`);
+            err.status = 422;
+            throw err;
         }
-        const foundPost = await Post.findById({
-            _id: postId
-        })
-        if (!foundPost) {
-            const error = new Error(`No post found for the given id!`)
-            error.status = 404
-            throw error
-        }
-        const foundUser = await User.findById({
-            _id: req.userData.userId
-        })
-        // Checking if the logged user is not the owner of the post
-        if (!foundPost.author.equals(req.userData.userId)) {
-            const err = new Error(`You are not authorized to perform the action!`)
-            err.status = 403
-            throw err
-        }
-        const deletedItem = await Post.deleteOne({
-            _id: postId
-        })
 
-        await foundUser.posts.pull(postId)
-        await foundUser.save()
+        const foundPost = await Post.findById(postId);
+        if (!foundPost) {
+            const error = new Error(`No post found for the given id!`);
+            error.status = 404;
+            throw error;
+        }
+
+        // Vérifier si l'utilisateur connecté est l'auteur du post
+        if (!foundPost.author.equals(req.userId)) {
+            const err = new Error(`You are not authorized to perform the action!`);
+            err.status = 403;
+            throw err;
+        }
+
+        // Supprimer le post
+        await Post.findByIdAndDelete(postId);
+
+        // Retirer le post de la liste des posts de l'utilisateur
+        const foundUser = await User.findById(req.userId);
+        if (foundUser) {
+            foundUser.posts.pull(postId);
+            await foundUser.save();
+        }
 
         res.json({
             message: `Post deleted successfully!`
-        })
+        });
     } catch (error) {
-        next(error)
+        next(error);
     }
-}
+};
+
 
 
 // const deleteAllPosts = async (req, res, next) => {
@@ -333,7 +343,7 @@ const downvote = async (req, res, next) => {
 
 
 module.exports = {
-    getAllPosts,
+    getAllPublicPosts,
     getPostByUser,
     getSinglePost,
     savePost,
